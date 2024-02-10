@@ -1,4 +1,5 @@
-﻿using coffeehouse_api.Models.User;
+﻿using coffeehouse_api.Dtos;
+using coffeehouse_api.Models.User;
 using Microsoft.EntityFrameworkCore;
 using Museum.Data;
 
@@ -11,6 +12,55 @@ namespace coffeehouse_api.Data.UserRepos
         public UserRepository(CoffeeHouseContext context)
         {
             this.context = context;
+        }
+
+        public async Task<User> ChangeAccountProperties(int userId, string email, byte[] passwordHash = null, byte[] passwordSalt = null)
+        {
+            User user = await context.Users
+                .Include(x=>x.Cart)
+                .Include(x=>x.Role)
+                .FirstOrDefaultAsync(x => x.Id == userId);
+
+            if (user != null)
+            {
+                user.Email = email;
+                if (passwordHash!=null)
+                {
+                    user.PasswordHash = passwordHash;
+                    user.PasswordSalt = passwordSalt;
+                }
+                
+                await context.SaveChangesAsync();
+
+                return user;    
+            }
+
+            return null;
+        }
+
+        public async Task<DeliveryData> ChangeDeliveryData(int userId, string town, string street, string phone)
+        {
+            User user = await context.Users
+                .Include(x => x.DeliveryData)
+                .FirstOrDefaultAsync(x => x.Id == userId);
+
+            if (user.DeliveryData != null) {
+                user.DeliveryData.Town = town;
+                user.DeliveryData.Street = street;
+                user.DeliveryData.PhoneNumber = phone;
+            }
+            else
+            {
+                user.DeliveryData = new DeliveryData()
+                {
+                    Town = town,
+                    Street = street,
+                    PhoneNumber = phone
+                };
+            }
+            await context.SaveChangesAsync();
+
+            return user.DeliveryData;
         }
 
         public async Task<User> Create(User user)
@@ -38,5 +88,13 @@ namespace coffeehouse_api.Data.UserRepos
             return user;
         }
 
+        public async Task<DeliveryData> GetDeliveryData(int userId)
+        {
+            User user = await context.Users
+                 .Include(x => x.DeliveryData)
+                 .FirstOrDefaultAsync(x => x.Id == userId);
+
+            return user.DeliveryData;
+        }
     }
 }

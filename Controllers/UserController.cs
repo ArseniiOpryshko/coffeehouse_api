@@ -1,6 +1,7 @@
 ﻿using coffeehouse_api.Data.UserRepos;
 using coffeehouse_api.Dtos;
 using coffeehouse_api.Models.User;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using Museum.Data.ObjsForAuth;
@@ -26,7 +27,7 @@ namespace coffeehouse_api.Controllers
         {
             User? user = await repository.GetByEmail(dto.email);
 
-            if (user == null) 
+            if (user == null)
                 return BadRequest("Invalid Email");
 
             if (!VerifyPassword(dto.password, user.PasswordHash, user.PasswordSalt))
@@ -78,14 +79,13 @@ namespace coffeehouse_api.Controllers
                 passwordHash = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
             }
         }
-
         private string CreateToken(User user)
         {
             var identity = GetIdentity(user);
             var now = DateTime.UtcNow;
 
             var jwt = new JwtSecurityToken(
-               claims: identity.Claims,               
+               claims: identity.Claims,
                expires: now.Add(TimeSpan.FromHours(AuthOptions.LIFETIME)),
                signingCredentials: new SigningCredentials(AuthOptions.GetSymmetricSecurityKey(), SecurityAlgorithms.HmacSha512Signature));
 
@@ -107,5 +107,37 @@ namespace coffeehouse_api.Controllers
 
             return claimsIdentity;
         }
+
+        [HttpPost("ChangeProps")]
+        public async Task<ActionResult<string>> ChangeProps(ChangePropsDto dto)
+        {
+            User user;
+            if (dto.password != "")
+            {
+                CreatePasswordHash(dto.password, out byte[] passwordHash, out byte[] passwordSalt);
+                user = await repository.ChangeAccountProperties(dto.userId, dto.email, passwordHash, passwordSalt);
+            }
+            else
+            {
+                user = await repository.ChangeAccountProperties(dto.userId, dto.email);
+            }
+
+            string jwt = CreateToken(user);
+            
+            return Ok(jwt);
+        }
+
+        [HttpPost("ChangeDelivery")]
+        public async Task<ActionResult<DeliveryData>> ChangeDelivery(ChangeDeliveryDto dto)
+        {
+            return await repository.ChangeDeliveryData(dto.userId, dto.town, dto.street, dto.phone);
+        }
+
+        [HttpGet("GetDeliveryData")]
+        public async Task<ActionResult<DeliveryData>> GetDeliveryData(int userId)
+        {
+            return await repository.GetDeliveryData(userId);
+        }
+        
     }
 }
