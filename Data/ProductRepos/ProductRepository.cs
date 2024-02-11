@@ -1,8 +1,11 @@
-﻿using coffeehouse_api.Models;
+﻿using coffeehouse_api.Dtos;
+using coffeehouse_api.Models;
 using coffeehouse_api.Models.User;
 using Microsoft.EntityFrameworkCore;
 using Museum.Data;
 using System.Linq;
+using System.Xml.Serialization;
+using Type = coffeehouse_api.Models.Type;
 
 namespace coffeehouse_api.Data.ProductRepos
 {
@@ -63,6 +66,51 @@ namespace coffeehouse_api.Data.ProductRepos
             return cart;
         }
 
+        public async Task<int> CreateProduct(CreateDto data, byte[] image)
+        {
+            Type type = await context.Types.FirstOrDefaultAsync(x => x.Name == data.type);
+            
+            Product product = new Product()
+            {
+                Name = data.name,
+                Description = data.description,
+                Type = type,
+                Price = Convert.ToDecimal(data.price),
+                Image = image
+            };
+
+            foreach (Comp item in data.compounds)
+            {
+                if (item.isSelected)
+                {
+                    Compound compound = await context.Compounds.FirstOrDefaultAsync(x=>x.Id==item.id);
+                    CompoundGrammProduct cgp = new CompoundGrammProduct()
+                    {
+                        Compound = compound,
+                        Gramm = item.gram
+                    };
+                    product.Compounds.Add(cgp);
+                }
+            }
+
+
+            await context.Products.AddAsync(product);
+            await context.SaveChangesAsync();
+            return product.Id;
+        }
+
+        public async Task<int> DeleteProduct(string name)
+        {
+            Product product = await context.Products.FirstOrDefaultAsync(x => x.Name == name);
+            if (product != null)
+            {
+                context.Products.Remove(product);
+                await context.SaveChangesAsync();
+                return product.Id;
+            }
+            return 0;
+        }
+
         public async Task<Product> GetById(int id)
         {
             Product? product = await context.Products
@@ -84,6 +132,12 @@ namespace coffeehouse_api.Data.ProductRepos
                 .FirstOrDefaultAsync(x=>x.Id == id);
 
             return cart;
+        }
+
+        public async Task<IEnumerable<Compound>> GetCompounds()
+        {
+            List<Compound> compounds = await context.Compounds.ToListAsync();
+            return compounds;
         }
 
         public async Task<IEnumerable<Product>> GetDrinks()

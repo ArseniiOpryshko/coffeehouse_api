@@ -5,6 +5,7 @@ using coffeehouse_api.Models.User;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Museum.Data;
+using Newtonsoft.Json;
 
 namespace coffeehouse_api.Controllers
 {
@@ -53,6 +54,32 @@ namespace coffeehouse_api.Controllers
         public async Task<ActionResult<Cart>> ConfirmOrder(ConfirmDto dto)
         {
             return await repository.ConfirmOrder(dto.cartId, dto.products);
+        }
+
+        [HttpDelete("DeleteWithName")]
+        public async Task<ActionResult<int>> Delete(string name)
+        {
+            return await repository.DeleteProduct(name);
+        }
+        [HttpGet("GetCompounds")]
+        public async Task<IEnumerable<Compound>> GetCompounds()
+        {
+            return await repository.GetCompounds();
+        }
+        [HttpPost("Create")]
+        public async Task<ActionResult<int>> Create([FromForm] IFormFile file, [FromForm] string dto)
+        {
+            CreateDto? dtoData = JsonConvert.DeserializeObject<CreateDto>(dto);
+
+            byte[] imageData;
+            using (var binaryReader = new BinaryReader(file.OpenReadStream()))
+            {
+                imageData = binaryReader.ReadBytes((int)file.Length);
+            }
+
+            await repository.CreateProduct(dtoData, imageData);
+
+            return 1;
         }
     }
 }
