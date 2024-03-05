@@ -16,6 +16,7 @@ namespace coffeehouse_api.Data.ProductRepos
         Task<int> DeleteProduct(string name);
         Task<int> CreateProduct(CreateDto data, byte[] image);
         Task<IEnumerable<Compound>> GetCompounds();
-
+        Task<Product> GetLastProductType(int id);
+        Task<IEnumerable<byte[]>> GetImages(int id);
     }
 }

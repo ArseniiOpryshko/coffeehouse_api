@@ -149,6 +149,28 @@ namespace coffeehouse_api.Data.ProductRepos
             return products;
         }
 
+        public async Task<IEnumerable<byte[]>> GetImages(int id)
+        {
+            List<byte[]> bytes = await context.Products
+                .Include(x=>x.Type)
+                .Where(x => x.Type.Id == id)
+                .Select(x => x.Image)
+                .Take(4)
+                .ToListAsync();
+            return bytes;
+        }
+
+        public async Task<Product> GetLastProductType(int id)
+        {
+            Product product = await context.Products
+                .Include(x => x.Type)
+                .Where(x => x.Type.Id == id)
+                .OrderBy(x => x.Id)
+                .LastOrDefaultAsync();
+
+            return product;
+        }
+
         public async Task<IEnumerable<Product>> GetSweets()
         {
             List<Product> products = await context.Products

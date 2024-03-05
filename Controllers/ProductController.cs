@@ -81,5 +81,16 @@ namespace coffeehouse_api.Controllers
 
             return 1;
         }
+
+        [HttpGet("GetLastProductWithType")]
+        public async Task<Product> GetLastDrink(int id)
+        {
+            return await repository.GetLastProductType(id);
+        }
+        [HttpGet("GetProductImgs")]
+        public async Task<IEnumerable<byte[]>> GetProductImgs(int id)
+        {
+            return await repository.GetImages(id);
+        }
     }
 }
